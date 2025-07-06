@@ -30,6 +30,7 @@ pub fn requires_computation(e: &Expr) -> bool {
         | Expr::IsNull(..)
         | Expr::NotNull(..)
         | Expr::FillNull(..)
+        | Expr::FillNullStrategy(..)
         | Expr::IsIn { .. }
         | Expr::List { .. }
         | Expr::Between { .. }

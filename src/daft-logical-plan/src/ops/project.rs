@@ -327,6 +327,15 @@ fn replace_column_with_semantic_id(
                     Transformed::yes(Expr::FillNull(child.data, fill_value.data).into())
                 }
             }
+            Expr::FillNullStrategy(child, strategy) => {
+                let child =
+                    replace_column_with_semantic_id(child.clone(), subexprs_to_replace, schema);
+                if !child.transformed {
+                    Transformed::no(e)
+                } else {
+                    Transformed::yes(Expr::FillNullStrategy(child.data, *strategy).into())
+                }
+            }
             Expr::IsIn(child, items) => {
                 let child =
                     replace_column_with_semantic_id(child.clone(), subexprs_to_replace, schema);

@@ -11,7 +11,7 @@ use common_display::table_display::{make_comfy_table, StrValue};
 use common_error::DaftResult;
 use derive_more::Display;
 use indexmap::{map::RawEntryApiV1, IndexMap};
-pub use ops::cast_series_to_supertype;
+pub use ops::{cast_series_to_supertype, null::FillNullStrategy};
 
 pub(crate) use self::series_like::SeriesLike;
 use crate::{

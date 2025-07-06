@@ -22,7 +22,7 @@ use daft_core::{
 use daft_dsl::{
     expr::{
         bound_expr::{BoundAggExpr, BoundExpr},
-        BoundColumn,
+        BoundColumn, FillNullStrategy,
     },
     functions::{FunctionArgs, FunctionEvaluator},
     null_lit, resolved_col, AggExpr, ApproxPercentileParams, Column, Expr, ExprRef, LiteralValue,
@@ -624,6 +624,14 @@ impl RecordBatch {
             Expr::FillNull(child, fill_value) => {
                 let fill_value = self.eval_expression(&BoundExpr::new_unchecked(fill_value.clone()))?;
                 self.eval_expression(&BoundExpr::new_unchecked(child.clone()))?.fill_null(&fill_value)
+            }
+            Expr::FillNullStrategy(child, strategy) => {
+                // Convert daft-dsl FillNullStrategy to daft-core FillNullStrategy
+                let core_strategy = match strategy {
+                    FillNullStrategy::Forward => daft_core::series::FillNullStrategy::Forward,
+                    FillNullStrategy::Backward => daft_core::series::FillNullStrategy::Backward,
+                };
+                self.eval_expression(&BoundExpr::new_unchecked(child.clone()))?.fill_null_with_strategy(core_strategy)
             }
             Expr::IsIn(child, items) => {
                 if items.is_empty() {

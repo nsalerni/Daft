@@ -294,6 +294,10 @@ fn translate_clustering_spec_expr(
             let newfill = translate_clustering_spec_expr(fill_value, old_colname_to_new_colname)?;
             Ok(newchild.fill_null(newfill))
         }
+        Expr::FillNullStrategy(child, strategy) => {
+            let newchild = translate_clustering_spec_expr(child, old_colname_to_new_colname)?;
+            Ok(newchild.fill_null_strategy(*strategy))
+        }
         Expr::IsIn(child, items) => {
             let newchild = translate_clustering_spec_expr(child, old_colname_to_new_colname)?;
             let newitems = items

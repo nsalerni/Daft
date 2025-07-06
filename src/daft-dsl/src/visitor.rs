@@ -2,7 +2,7 @@ use daft_core::{prelude::DataType, python::PyDataType};
 use pyo3::{
     exceptions::PyValueError,
     types::{PyAnyMethods, PyList, PyListMethods},
-    Bound, PyAny, PyResult, Python,
+    Bound, IntoPyObjectExt, PyAny, PyResult, Python,
 };
 
 use crate::{
@@ -30,6 +30,7 @@ pub fn accept<'py>(expr: &PyExpr, visitor: Bound<'py, PyAny>) -> PyVisitorResult
         Expr::IsNull(expr) => visitor.visit_is_null(expr),
         Expr::NotNull(expr) => visitor.visit_not_null(expr),
         Expr::FillNull(expr, expr1) => visitor.visit_fill_null(expr, expr1),
+        Expr::FillNullStrategy(expr, strategy) => visitor.visit_fill_null_strategy(expr, strategy),
         Expr::IsIn(expr, exprs) => visitor.visit_is_in(expr, exprs),
         Expr::Between(expr, expr1, expr2) => visitor.visit_between(expr, expr1, expr2),
         Expr::List(exprs) => visitor.visit_list(exprs),
@@ -200,6 +201,23 @@ impl<'py> PyVisitor<'py> {
     fn visit_fill_null(&self, expr: &ExprRef, expr1: &ExprRef) -> PyVisitorResult<'py> {
         let name = "fill_null";
         let args = vec![self.to_expr(expr)?, self.to_expr(expr1)?];
+        self.visit_function(name, args)
+    }
+
+    fn visit_fill_null_strategy(
+        &self,
+        expr: &ExprRef,
+        strategy: &crate::expr::FillNullStrategy,
+    ) -> PyVisitorResult<'py> {
+        let name = "fill_null_strategy";
+        let strategy_str = match strategy {
+            crate::expr::FillNullStrategy::Forward => "forward".to_string(),
+            crate::expr::FillNullStrategy::Backward => "backward".to_string(),
+        };
+        let args = vec![
+            self.to_expr(expr)?,
+            strategy_str.into_bound_py_any(self.py)?,
+        ];
         self.visit_function(name, args)
     }
 

@@ -21,6 +21,7 @@ from daft.daft import (
     CountMode,
     ImageFormat,
     ImageMode,
+    PyFillNullStrategy,
     ResourceRequest,
     initialize_udfs,
     resolved_col,
@@ -1406,13 +1407,24 @@ class Expression:
         expr = self._expr.not_null()
         return Expression._from_pyexpr(expr)
 
-    def fill_null(self, fill_value: Expression) -> Expression:
-        """Fills null values in the Expression with the provided fill_value.
+    def fill_null(
+        self,
+        fill_value: Expression | None = None,
+        *,
+        strategy: Literal["forward", "backward"] | None = None,
+    ) -> Expression:
+        """Fills null values in the Expression with the provided fill_value or strategy.
+
+        Args:
+            fill_value: Value to fill nulls with. Cannot be used with strategy.
+            strategy: Strategy for filling nulls ("forward" or "backward"). Cannot be used with fill_value.
 
         Returns:
-            Expression: Expression with null values filled with the provided fill_value
+            Expression: Expression with null values filled
 
         Examples:
+            Fill with a specific value:
+
             >>> import daft
             >>> df = daft.from_pydict({"data": [1, None, 3]})
             >>> df = df.select(df["data"].fill_null(2))
@@ -1431,7 +1443,44 @@ class Expression:
             <BLANKLINE>
             (Showing first 3 of 3 rows)
 
+            Forward fill:
+
+            >>> df = daft.from_pydict({"data": [None, 1, None, None, 3]})
+            >>> df = df.select(df["data"].fill_null(strategy="forward"))
+            >>> df.collect()
+            ╭───────╮
+            │ data  │
+            │ ---   │
+            │ Int64 │
+            ╞═══════╡
+            │ null  │
+            ├╌╌╌╌╌╌╌┤
+            │ 1     │
+            ├╌╌╌╌╌╌╌┤
+            │ 1     │
+            ├╌╌╌╌╌╌╌┤
+            │ 1     │
+            ├╌╌╌╌╌╌╌┤
+            │ 3     │
+            ╰───────╯
+            <BLANKLINE>
+            (Showing first 5 of 5 rows)
+
         """
+        # Validate that exactly one of fill_value or strategy is provided
+        if (fill_value is None) == (strategy is None):
+            raise ValueError("Exactly one of 'fill_value' or 'strategy' must be provided")
+
+        if strategy is not None:
+            if strategy not in ("forward", "backward"):
+                raise ValueError("strategy must be 'forward' or 'backward'")
+
+            # Convert string strategy to enum
+            py_strategy = PyFillNullStrategy.Forward if strategy == "forward" else PyFillNullStrategy.Backward
+            expr = self._expr.fill_null_strategy(py_strategy)
+            return Expression._from_pyexpr(expr)
+
+        # Original fill_value path
         fill_value = Expression._to_expression(fill_value)
         expr = self._expr.fill_null(fill_value._expr)
         return Expression._from_pyexpr(expr)

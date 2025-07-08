@@ -47,7 +47,7 @@ impl Series {
                 // Current value is null, use the last valid value if available
                 if let Some(ref fill_val) = last_valid_value {
                     let mask = self.create_mask_for_index(i)?;
-                    result = result.if_else(fill_val, &mask)?;
+                    result = fill_val.if_else(&result, &mask)?;
                 }
             } else {
                 // Current value is not null, update last_valid_value
@@ -77,7 +77,7 @@ impl Series {
                 // Current value is null, use the next valid value if available
                 if let Some(ref fill_val) = next_valid_value {
                     let mask = self.create_mask_for_index(i)?;
-                    result = result.if_else(fill_val, &mask)?;
+                    result = fill_val.if_else(&result, &mask)?;
                 }
             } else {
                 // Current value is not null, update next_valid_value

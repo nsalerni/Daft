@@ -298,6 +298,11 @@ fn translate_clustering_spec_expr(
             let newchild = translate_clustering_spec_expr(child, old_colname_to_new_colname)?;
             Ok(newchild.fill_null_strategy(*strategy))
         }
+        Expr::FillNullStrategyExpr(child, strategy) => {
+            let newchild = translate_clustering_spec_expr(child, old_colname_to_new_colname)?;
+            let newstrategy = translate_clustering_spec_expr(strategy, old_colname_to_new_colname)?;
+            Ok(newchild.fill_null_strategy_expr(newstrategy))
+        }
         Expr::IsIn(child, items) => {
             let newchild = translate_clustering_spec_expr(child, old_colname_to_new_colname)?;
             let newitems = items

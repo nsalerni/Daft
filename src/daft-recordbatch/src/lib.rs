@@ -633,6 +633,21 @@ impl RecordBatch {
                 };
                 self.eval_expression(&BoundExpr::new_unchecked(child.clone()))?.fill_null_with_strategy(core_strategy)
             }
+            Expr::FillNullStrategyExpr(child, strategy) => {
+                // Evaluate the strategy expression to determine the strategy
+                let strategy_series = self.eval_expression(&BoundExpr::new_unchecked(strategy.clone()))?;
+                let strategy_value = strategy_series.utf8()?.get(0);
+
+                // Convert the strategy value to the appropriate enum
+                let core_strategy = match strategy_value {
+                    Some("forward") => daft_core::series::FillNullStrategy::Forward,
+                    Some("backward") => daft_core::series::FillNullStrategy::Backward,
+                    Some(other) => return Err(DaftError::ComputeError(format!("Invalid fill_null strategy: {}", other))),
+                    None => return Err(DaftError::ComputeError("Strategy value cannot be null".to_string())),
+                };
+
+                self.eval_expression(&BoundExpr::new_unchecked(child.clone()))?.fill_null_with_strategy(core_strategy)
+            }
             Expr::IsIn(child, items) => {
                 if items.is_empty() {
                     return BooleanArray::from_iter(&child.get_name(&self.schema)?, std::iter::once(Some(false))).into_series().broadcast(self.len());

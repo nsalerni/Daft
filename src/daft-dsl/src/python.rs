@@ -503,8 +503,12 @@ impl PyExpr {
         Ok(self.expr.clone().fill_null(fill_value.expr.clone()).into())
     }
 
-    pub fn fill_null_strategy(&self, strategy: PyFillNullStrategy) -> PyResult<Self> {
-        Ok(self.expr.clone().fill_null_strategy(strategy.into()).into())
+    pub fn fill_null_strategy(&self, strategy: &Self) -> PyResult<Self> {
+        Ok(self
+            .expr
+            .clone()
+            .fill_null_strategy_expr(strategy.expr.clone())
+            .into())
     }
 
     pub fn eq_null_safe(&self, other: &Self) -> PyResult<Self> {

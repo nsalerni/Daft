@@ -21,7 +21,6 @@ from daft.daft import (
     CountMode,
     ImageFormat,
     ImageMode,
-    PyFillNullStrategy,
     ResourceRequest,
     initialize_udfs,
     resolved_col,
@@ -1475,9 +1474,9 @@ class Expression:
             if strategy not in ("forward", "backward"):
                 raise ValueError("strategy must be 'forward' or 'backward'")
 
-            # Convert string strategy to enum
-            py_strategy = PyFillNullStrategy.Forward if strategy == "forward" else PyFillNullStrategy.Backward
-            expr = self._expr.fill_null_strategy(py_strategy)
+            # Convert string strategy to PyExpr
+            strategy_expr = Expression._to_expression(strategy)
+            expr = self._expr.fill_null_strategy(strategy_expr._expr)
             return Expression._from_pyexpr(expr)
 
         # Original fill_value path

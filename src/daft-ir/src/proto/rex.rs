@@ -226,6 +226,11 @@ impl ToFromProto for ir::Expr {
             Self::FillNullStrategy(_expr, _strategy) => {
                 not_implemented_err!("FillNullStrategy protobuf serialization not yet implemented")
             }
+            Self::FillNullStrategyExpr(_expr, _strategy) => {
+                not_implemented_err!(
+                    "FillNullStrategyExpr protobuf serialization not yet implemented"
+                )
+            }
             Self::IsIn(expr, values) => {
                 let expr = expr.to_proto()?.into();
                 let items = to_proto_vec(values)?;

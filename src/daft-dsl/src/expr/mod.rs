@@ -270,6 +270,9 @@ pub enum Expr {
     #[display("fill_null({_0}, strategy={_1})")]
     FillNullStrategy(ExprRef, FillNullStrategy),
 
+    #[display("fill_null({_0}, strategy={_1})")]
+    FillNullStrategyExpr(ExprRef, ExprRef),
+
     #[display("{}", display::expr_is_in_display_without_formatter(_0, _1)?)]
     IsIn(ExprRef, Vec<ExprRef>),
 
@@ -1065,6 +1068,10 @@ impl Expr {
         Self::FillNullStrategy(self, strategy).into()
     }
 
+    pub fn fill_null_strategy_expr(self: ExprRef, strategy: ExprRef) -> ExprRef {
+        Self::FillNullStrategyExpr(self, strategy).into()
+    }
+
     pub fn is_in(self: ExprRef, items: Vec<ExprRef>) -> ExprRef {
         Self::IsIn(self, items).into()
     }
@@ -1275,6 +1282,11 @@ impl Expr {
                 let child_id = child.semantic_id(schema);
                 FieldID::new(format!("{child_id}.fill_null(strategy={strategy})"))
             }
+            Self::FillNullStrategyExpr(child, strategy) => {
+                let child_id = child.semantic_id(schema);
+                let strategy_id = strategy.semantic_id(schema);
+                FieldID::new(format!("{child_id}.fill_null(strategy={strategy_id})"))
+            }
         }
     }
 
@@ -1315,6 +1327,7 @@ impl Expr {
             }
             Self::FillNull(expr, fill_value) => vec![expr.clone(), fill_value.clone()],
             Self::FillNullStrategy(expr, _strategy) => vec![expr.clone()],
+            Self::FillNullStrategyExpr(expr, strategy) => vec![expr.clone(), strategy.clone()],
             Self::ScalarFunction(sf) => sf.inputs.clone().into_inner(),
         }
     }
@@ -1386,6 +1399,10 @@ impl Expr {
             Self::FillNullStrategy(_, strategy) => Self::FillNullStrategy(
                 children.first().expect("Should have 1 child").clone(),
                 *strategy,
+            ),
+            Self::FillNullStrategyExpr(..) => Self::FillNullStrategyExpr(
+                children.first().expect("Should have 1 child").clone(),
+                children.get(1).expect("Should have 2 child").clone(),
             ),
             // ternary
             Self::IfElse { .. } => Self::IfElse {
@@ -1488,6 +1505,10 @@ impl Expr {
                 }
             }
             Self::FillNullStrategy(expr, _strategy) => {
+                // For strategy-based fill_null, the result type is the same as the input expression
+                expr.to_field(schema)
+            }
+            Self::FillNullStrategyExpr(expr, _strategy) => {
                 // For strategy-based fill_null, the result type is the same as the input expression
                 expr.to_field(schema)
             }
@@ -1667,6 +1688,7 @@ impl Expr {
             Self::NotNull(expr) => expr.name(),
             Self::FillNull(expr, ..) => expr.name(),
             Self::FillNullStrategy(expr, ..) => expr.name(),
+            Self::FillNullStrategyExpr(expr, ..) => expr.name(),
             Self::IsIn(expr, ..) => expr.name(),
             Self::Between(expr, ..) => expr.name(),
             Self::Literal(..) => "literal",
@@ -1772,6 +1794,7 @@ impl Expr {
                 | Expr::Function { .. }
                 | Expr::FillNull(..)
                 | Expr::FillNullStrategy(..)
+                | Expr::FillNullStrategyExpr(..)
                 | Expr::ScalarFunction { .. }
                 | Expr::Subquery(..)
                 | Expr::InSubquery(..)
@@ -1827,6 +1850,9 @@ impl Expr {
             Self::NotNull(expr) => expr.has_compute(),
             Self::FillNull(expr, fill_value) => expr.has_compute() || fill_value.has_compute(),
             Self::FillNullStrategy(expr, _strategy) => expr.has_compute(),
+            Self::FillNullStrategyExpr(expr, strategy) => {
+                expr.has_compute() || strategy.has_compute()
+            }
             Self::IfElse {
                 if_true,
                 if_false,
@@ -2083,7 +2109,8 @@ pub fn estimated_selectivity(expr: &Expr, schema: &Schema) -> f64 {
         | Expr::Column(_)
         | Expr::IfElse { .. }
         | Expr::FillNull(_, _)
-        | Expr::FillNullStrategy(_, _) => match expr.to_field(schema) {
+        | Expr::FillNullStrategy(_, _)
+        | Expr::FillNullStrategyExpr(_, _) => match expr.to_field(schema) {
             Ok(field) if field.dtype == DataType::Boolean => 0.2,
             _ => 1.0,
         },

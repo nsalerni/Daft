@@ -31,6 +31,9 @@ pub fn accept<'py>(expr: &PyExpr, visitor: Bound<'py, PyAny>) -> PyVisitorResult
         Expr::NotNull(expr) => visitor.visit_not_null(expr),
         Expr::FillNull(expr, expr1) => visitor.visit_fill_null(expr, expr1),
         Expr::FillNullStrategy(expr, strategy) => visitor.visit_fill_null_strategy(expr, strategy),
+        Expr::FillNullStrategyExpr(expr, strategy) => {
+            visitor.visit_fill_null_strategy_expr(expr, strategy)
+        }
         Expr::IsIn(expr, exprs) => visitor.visit_is_in(expr, exprs),
         Expr::Between(expr, expr1, expr2) => visitor.visit_between(expr, expr1, expr2),
         Expr::List(exprs) => visitor.visit_list(exprs),
@@ -218,6 +221,16 @@ impl<'py> PyVisitor<'py> {
             self.to_expr(expr)?,
             strategy_str.into_bound_py_any(self.py)?,
         ];
+        self.visit_function(name, args)
+    }
+
+    fn visit_fill_null_strategy_expr(
+        &self,
+        expr: &ExprRef,
+        strategy: &ExprRef,
+    ) -> PyVisitorResult<'py> {
+        let name = "fill_null_strategy";
+        let args = vec![self.to_expr(expr)?, self.to_expr(strategy)?];
         self.visit_function(name, args)
     }
 

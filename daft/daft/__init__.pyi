@@ -191,12 +191,6 @@ class CountMode(Enum):
         """
         ...
 
-class PyFillNullStrategy(Enum):
-    """Fill null strategy for forward/backward filling."""
-
-    Forward = 1
-    Backward = 2
-
 class ResourceRequest:
     """Resource request for a query fragment task."""
 

@@ -300,22 +300,6 @@ pub enum ApproxPercentileInput {
     Many(Vec<f64>),
 }
 
-#[pyclass(module = "daft.daft")]
-#[derive(Debug, Clone, Copy)]
-pub enum PyFillNullStrategy {
-    Forward,
-    Backward,
-}
-
-impl From<PyFillNullStrategy> for crate::expr::FillNullStrategy {
-    fn from(strategy: PyFillNullStrategy) -> Self {
-        match strategy {
-            PyFillNullStrategy::Forward => Self::Forward,
-            PyFillNullStrategy::Backward => Self::Backward,
-        }
-    }
-}
-
 impl PyExpr {
     /// converts the pyexpr into a `daft.Expression` python instance
     /// `daft.Expression._from_pyexpr(self)`

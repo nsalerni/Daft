@@ -34,8 +34,6 @@ use pyo3::prelude::*;
 #[cfg(feature = "python")]
 pub fn register_modules(parent: &Bound<PyModule>) -> PyResult<()> {
     parent.add_class::<python::PyExpr>()?;
-    parent.add_class::<python::PyFillNullStrategy>()?;
-
     parent.add_class::<expr::window::WindowFrame>()?;
     parent.add_class::<expr::window::WindowSpec>()?;
     parent.add_class::<expr::window::PyWindowBoundary>()?;
